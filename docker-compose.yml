@@ -1,0 +1,43 @@
+version: '3'
+services:
+  evebox:
+    image: jasonish/evebox:latest
+    ports:
+      - "8081:5636"
+    volumes:
+      - simple-ids-evebox-lib:/data # This volume is used as the data directory for all 3 containers
+      - ./logs:/var/log/suricata 
+    command: evebox server --host=0.0.0.0 --datastore sqlite --data-directory /data --input /var/log/suricata/eve.json
+
+  suricata:
+    image: jasonish/suricata:latest
+    network_mode: "host"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    volumes:
+      - simple-ids-suricata-run:/var/run/suricata
+      - ./logs:/var/log/suricata  
+      - simple-ids-suricata-lib:/etc/suricata
+    command: -v -i ens18
+
+  alert-script:
+    build:
+      context: ./alert-script
+      dockerfile: Dockerfile
+    volumes:
+      - ./logs:/var/log/suricata
+    environment:
+      - AZURE_CLIENT_ID= <Client ID>
+      - AZURE_CLIENT_SECRET= <Secret>
+      - AZURE_TENANT_ID= <Tenant ID>
+
+
+volumes:
+  simple-ids-suricata-run:
+  simple-ids-suricata-lib:
+  simple-ids-evebox-lib:
+  simple-ids-suricata-log:
+
+
